@@ -1,0 +1,130 @@
+<header class="app-header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12c0 2.19.7 4.2 1.88 5.86L3 22l4.28-.85A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.66 0-3.21-.42-4.54-1.15l-2.61.52.53-2.5A7.95 7.95 0 014 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8z"/></svg>
+    <h1>AI Chat Insights</h1>
+  </div>
+</header>
+
+<div class="main-container">
+  
+  <aside class="sidebar">
+    <div class="config-card">
+      <h3>Calibração da IA</h3>
+      
+      <div class="form-group">
+        <label>System Prompt</label>
+        <textarea [(ngModel)]="systemPrompt" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Modelo</label>
+        <select [(ngModel)]="selectedModel">
+          <option *ngFor="let m of modelOptions" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Temperature: {{ temperature() }}</label>
+        <p-slider [(ngModel)]="temperature" [min]="0" [max]="1" [step]="0.1"></p-slider>
+      </div>
+
+      <div class="form-group">
+        <label>Token Z.AI</label>
+        <input type="password" [(ngModel)]="apiToken" placeholder="Insira o seu Bearer Token">
+      </div>
+    </div>
+
+    <div class="upload-card">
+      <h3>Upload do Chat</h3>
+      <input type="file" accept=".txt" (change)="onFileUpload($event)">
+      
+      <button class="btn-analisar" [disabled]="!fileContent() || isLoading()" (click)="analisar()">
+        {{ isLoading() ? 'A Analisar...' : 'Enviar para Análise' }}
+      </button>
+
+      <div *ngIf="errorMessage()" class="alert error">{{ errorMessage() }}</div>
+    </div>
+  </aside>
+
+  <main class="dashboard">
+    
+    <div *ngIf="!result() && !isLoading()" class="empty-state">
+      <p>Carregue um ficheiro .txt e clique em "Enviar para Análise" para começar.</p>
+    </div>
+
+    <div *ngIf="isLoading()" class="loading-state">
+      A processar os dados da conversa. Isto pode demorar alguns minutos...
+    </div>
+
+    <div *ngIf="result()" class="results-container">
+      
+      <div class="kpi-grid">
+        <div class="kpi-card"><span class="number">{{ kpis().envolvidos }}</span><span class="label">Envolvidos</span></div>
+        <div class="kpi-card"><span class="number">{{ kpis().tarefas }}</span><span class="label">Tarefas</span></div>
+        <div class="kpi-card"><span class="number">{{ kpis().prazos }}</span><span class="label">Prazos</span></div>
+        <div class="kpi-card"><span class="number">{{ kpis().riscos }}</span><span class="label">Riscos</span></div>
+        <div class="kpi-card"><span class="number">{{ kpis().conflitos }}</span><span class="label">Conflitos</span></div>
+      </div>
+
+      <div class="card full-width">
+        <h3>Resumo Executivo</h3>
+        <p>{{ result()?.resumo }}</p>
+      </div>
+
+      <div class="card full-width">
+        <h3>{{ getSentimentoEmoji(kpis().sentimento) }} Sentimento da conversa ({{ kpis().sentimento }}/10)</h3>
+        <p>{{ result()?.sentimentoDescricao || 'Sem descrição de sentimento fornecida.' }}</p>
+      </div>
+
+      <div class="header-listas">
+        <div class="participantes-chips">
+          <span class="chip" *ngFor="let p of result()?.participantes">{{ p }}</span>
+        </div>
+        <div class="filtro-container">
+          <label>Filtrar por participante:</label>
+          <select [(ngModel)]="selectedParticipant">
+            <option value="Todos">Todos</option>
+            <option *ngFor="let p of result()?.participantes" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="listas-grid">
+        
+        <div class="card-lista">
+          <h3>Tarefas <span class="badge">{{ filteredTarefas().length }}</span></h3>
+          <ul>
+            <li *ngFor="let t of filteredTarefas()">
+              <strong>{{ t.envolvido }}:</strong> {{ t.descricao }} <span class="priority-tag">[{{ t.prioridade }}]</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-lista">
+          <h3>Prazos <span class="badge">{{ filteredPrazos().length }}</span></h3>
+          <ul>
+            <li *ngFor="let p of filteredPrazos()">
+              <strong>{{ p.envolvido }}:</strong> {{ p.descricao }} ({{ p.data }})
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-lista">
+          <h3>Riscos <span class="badge">{{ filteredRiscos().length }}</span></h3>
+          <ul>
+            <li *ngFor="let r of filteredRiscos()"><strong>{{ r.envolvido }}:</strong> {{ r.descricao }}</li>
+          </ul>
+        </div>
+
+        <div class="card-lista">
+          <h3>Conflitos <span class="badge">{{ filteredConflitos().length }}</span></h3>
+          <ul>
+            <li *ngFor="let c of filteredConflitos()"><strong>{{ c.envolvido }}:</strong> {{ c.descricao }}</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+</div>
