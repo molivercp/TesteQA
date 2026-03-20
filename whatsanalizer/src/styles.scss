@@ -1,1 +1,13 @@
 /* You can add global styles to this file, and also import other style files */
+/* Zera as margens e preenchimentos padrão do navegador */
+body, html {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #e5ddd5;
+  font-family: 'Segoe UI', Helvetica, sans-serif;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
