@@ -96,22 +96,27 @@ export class WhatsanalizerComponent {
     this.result.set(null);
 
     const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.apiToken()}`,
+      'Authorization': `Bearer ${this.apiToken().trim()}`,
       'Content-Type': 'application/json'
     });
 
+    // Ajustes obrigatórios para APIs de IA
+    const formatModel = this.selectedModel().toLowerCase().replace(' ', '-');
+    let safeTemp = this.temperature();
+    if (safeTemp <= 0) safeTemp = 0.01;
+    if (safeTemp >= 1) safeTemp = 0.99;
+
     const body = {
-      model: this.selectedModel(),
+      model: formatModel,
       messages: [
         { role: 'system', content: this.systemPrompt() },
         { role: 'user', content: this.fileContent() }
       ],
-      temperature: this.temperature(),
+      temperature: safeTemp,
       stream: false,
       response_format: { type: "json_object" }
     };
 
-    // Timeout de 2.5 min = 150000 ms
     this.http.post<any>('https://api.z.ai/api/paas/v4/chat/completions', body, { headers })
       .pipe(
         timeout(150000),
@@ -127,6 +132,10 @@ export class WhatsanalizerComponent {
           } catch (e) {
             this.errorMessage.set('Erro ao processar os dados da IA. Retorno inválido.');
           }
+        },
+        error: (err) => {
+          // Previne que o console do navegador fique cheio de erros vermelhos inúteis
+          console.warn('Bloqueio da API tratado pela interface da aplicação.');
         }
       });
   }
@@ -137,7 +146,9 @@ export class WhatsanalizerComponent {
     } else if (error.status === 429 || error.status === 1302) {
       this.errorMessage.set('Atingimos o limite de requisições (Rate Limit). Por favor, aguarde um momento e tente de novo.');
     } else {
-      this.errorMessage.set('Ocorreu um erro ao comunicar com a API da Z.AI.');
+      // Lê o erro real enviado pela Z.AI (ex: "Invalid API Key")
+      const apiMsg = error.error?.error?.message || error.error?.message || 'Token inválido ou sem permissão.';
+      this.errorMessage.set(`Acesso Recusado: ${apiMsg}`);
     }
     return throwError(() => new Error(this.errorMessage()));
   }
